@@ -212,7 +212,8 @@ def check(force=False):
     cleanup = fetch(cleanup_url)
     (WORK / "clean-overlay.sh").write_bytes(cleanup)
     indexes = [{"url": url, "sha256": digest(fetch(url))} for url in [*urls, cfg["feed_url"]]]
-    recipe = digest(git("ls-tree", "-r", "HEAD", "--", "scripts", "profiles", "files", "tests",
+    # tests/ only exercises local automation and never enters the image.
+    recipe = digest(git("ls-tree", "-r", "HEAD", "--", "scripts", "profiles", "files",
                         ".github/workflows/R5C-OpenWrt.yml").encode())
     inputs = {**resolved, "upstream_sha": source["upstream_sha"], "recipe_sha256": recipe,
               "addon_sha": addon_sha, "cleanup_sha256": digest(cleanup), "indexes": indexes,
@@ -221,10 +222,15 @@ def check(force=False):
               "lan_address": cfg["lan_address"]}
     identity = fingerprint(inputs)
     previous = json.loads(STATE.read_text()) if STATE.exists() else {}
+    write_json(WORK / "previous.json", previous)
     changed = force or previous.get("fingerprint") != identity
-    run_id = os.environ.get("GITHUB_RUN_ID", "local")
-    attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "1")
-    tag = f'r5c-{resolved["version"]}-{identity[:12]}-{run_id}-{attempt}'
+    # Identical inputs share one tag so overlapping runs cannot publish duplicate releases.
+    if force:
+        run_id = os.environ.get("GITHUB_RUN_ID", "local")
+        attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "1")
+        tag = f'r5c-{resolved["version"]}-{identity[:12]}-{run_id}-{attempt}'
+    else:
+        tag = f'r5c-{resolved["version"]}-{identity[:12]}'
     plan = {"fingerprint": identity, "inputs": inputs, "source": source, "tag": tag,
             "kernel_capabilities": capabilities, "ib_archive": str(archive.relative_to(ROOT))}
     write_json(WORK / "inputs.json", plan)
@@ -235,6 +241,71 @@ def check(force=False):
             upstream_sha=source["upstream_sha"], base_sha=source["base_sha"], source_tree=source["tree"])
     print(f"Repository state: {'build required' if changed else 'already current'}; fingerprint: {identity}")
     print(f"Kernel {kernel_version}; native BTF: {capabilities['CONFIG_DEBUG_INFO_BTF']}; AF_XDP: {capabilities['CONFIG_XDP_SOCKETS']}")
+
+
+def upstream_commits(old, new, limit=20):
+    if not old or not new or old == new:
+        return []
+    try:
+        out = git("log", "--oneline", "--max-count", str(limit), f"{old}..{new}")
+    except subprocess.CalledProcessError:
+        return []
+    return [line.strip() for line in out.splitlines() if line.strip()]
+
+
+def recipe_changes(base, head):
+    try:
+        out = git("diff", "--name-only", base, head, "--", "scripts", "profiles", "files",
+                  ".github/workflows/R5C-OpenWrt.yml")
+    except subprocess.CalledProcessError:
+        return []
+    return [line.strip() for line in out.splitlines() if line.strip()]
+
+
+def short(value):
+    return value[:12] if isinstance(value, str) else value
+
+
+def describe_changes(plan, previous, recipe_files, commits):
+    inputs = plan.get("inputs", {})
+    old = previous.get("inputs", {}) if previous else {}
+    if not old:
+        return ["- Initial automated build with these inputs."]
+    if previous.get("fingerprint") == plan.get("fingerprint"):
+        return [f"- Forced rebuild of `{previous.get('tag')}`: identical inputs "
+                f"(fingerprint `{short(plan.get('fingerprint'))}`); no content changes expected."]
+    lines = []
+    if old.get("version") != inputs.get("version"):
+        lines.append(f"- OpenWrt: {old.get('version')} \u2192 {inputs.get('version')}")
+    if old.get("kernel_version") != inputs.get("kernel_version"):
+        lines.append(f"- Linux kernel: {old.get('kernel_version')} \u2192 {inputs.get('kernel_version')}")
+    if old.get("upstream_sha") != inputs.get("upstream_sha"):
+        lines.append(f"- YAOF upstream: `{short(old.get('upstream_sha'))}` \u2192 `{short(inputs.get('upstream_sha'))}`")
+        lines.extend(f"  - {subject}" for subject in commits)
+    if old.get("addon_sha") != inputs.get("addon_sha"):
+        lines.append(f"- OpenWrt-Add feed: `{short(old.get('addon_sha'))}` \u2192 `{short(inputs.get('addon_sha'))}`")
+    if old.get("recipe_sha256") != inputs.get("recipe_sha256"):
+        detail = f" ({', '.join(recipe_files)})" if recipe_files else ""
+        lines.append(f"- Local recipe: `{short(old.get('recipe_sha256'))}` \u2192 `{short(inputs.get('recipe_sha256'))}`{detail}")
+    old_indexes = {entry["url"]: entry["sha256"] for entry in old.get("indexes", [])}
+    new_indexes = {entry["url"]: entry["sha256"] for entry in inputs.get("indexes", [])}
+    refreshed = sorted(url for url, sha in new_indexes.items() if old_indexes.get(url) != sha)
+    if refreshed:
+        if len(refreshed) <= 3:
+            lines.append(f"- Package indexes refreshed ({len(refreshed)} of {len(new_indexes)}):")
+            lines.extend(f"  - {url}" for url in refreshed)
+        else:
+            lines.append(f"- Package indexes refreshed ({len(refreshed)} of {len(new_indexes)} sources).")
+    for key, label in (("ib_sha256", "ImageBuilder"), ("feed_key_sha256", "Addon signing key"),
+                       ("cleanup_sha256", "Overlay cleanup script")):
+        if old.get(key) != inputs.get(key):
+            lines.append(f"- {label}: `{short(old.get(key))}` \u2192 `{short(inputs.get(key))}`")
+    if old.get("profile") != inputs.get("profile") or old.get("lan_address") != inputs.get("lan_address"):
+        lines.append(f"- Profile/addresses: {old.get('profile')}/{old.get('lan_address')} \u2192 "
+                     f"{inputs.get('profile')}/{inputs.get('lan_address')}")
+    if not lines:
+        lines.append("- Inputs changed without a categorized difference; see build-info.json.")
+    return lines
 
 
 def verify_gzip(path):
@@ -313,8 +384,15 @@ def verify():
     plan["verification"] = {"hardware_tested": False, "default_lan_in_rootfs": cfg["lan_address"],
                             "detached_btf_sha256": file_digest(btf), "required_packages_present": True}
     write_json(artifact / "build-info.json", plan)
+    previous = json.loads((WORK / "previous.json").read_text()) if (WORK / "previous.json").exists() else {}
+    old_inputs = previous.get("inputs", {}) if previous else {}
+    commits = upstream_commits(old_inputs.get("upstream_sha"), plan["inputs"].get("upstream_sha"))
+    changed_files = recipe_changes(plan["source"]["base_sha"], git("rev-parse", "HEAD"))
+    changes = describe_changes(plan, previous, changed_files, commits)
+    basis = previous.get("tag", "the initial state") if previous else "the initial state"
     (artifact / "release-notes.md").write_text(
         f"Automated NanoPi R5C build using OpenWrt {plan['inputs']['version']} / Linux {plan['inputs']['kernel_version']}.\n\n"
+        f"Changes since `{basis}`:\n" + "\n".join(changes) + "\n\n"
         f"- Default LAN: `{cfg['lan_address']}/24`. Existing network settings are preserved on configuration-preserving upgrades.\n"
         "- Official kernel and device drivers; upstream system-addon tuning and detached vmlinux-btf are retained.\n"
         "- CI checked image metadata, compression integrity, required packages, rootfs LAN defaults and BTF presence.\n"
@@ -335,8 +413,9 @@ def validate_publication(directory):
     plan = json.loads((directory / "build-info.json").read_text())
     if plan["fingerprint"] != fingerprint(plan["inputs"]):
         raise ValueError("Invalid build fingerprint")
-    if (not re.fullmatch(r"r5c-[0-9.]+-[0-9a-f]{12}-[0-9]+-[0-9]+", plan["tag"]) or
-            not plan["tag"].startswith(f'r5c-{plan["inputs"]["version"]}-{plan["fingerprint"][:12]}-')):
+    prefix = f'r5c-{plan["inputs"]["version"]}-{plan["fingerprint"][:12]}'
+    if (not re.fullmatch(r"r5c-[0-9.]+-[0-9a-f]{12}(-[0-9]+-[0-9]+)?", plan["tag"]) or
+            plan["tag"] != prefix and not plan["tag"].startswith(prefix + "-")):
         raise ValueError("Invalid release tag")
     for key in ("base_sha", "upstream_sha", "tree"):
         if not re.fullmatch(r"[0-9a-f]{40}", plan["source"][key]):

@@ -2,7 +2,7 @@ name: R5C firmware
 
 on:
   schedule:
-    - cron: '17 */6 * * *'
+    - cron: '17 */12 * * *'
   workflow_dispatch:
     inputs:
       force_build:
@@ -16,7 +16,6 @@ on:
       - 'scripts/**'
       - 'profiles/**'
       - 'files/**'
-      - 'tests/**'
       - '.github/workflows/R5C-OpenWrt.yml'
 
 permissions:
@@ -157,6 +156,23 @@ jobs:
           SOURCE_TREE: ${{ steps.assets.outputs.source_tree }}
           TAG: ${{ steps.assets.outputs.tag }}
         run: |
+          if gh release view "$TAG" --repo "$REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; syncing state without duplicating the release."
+            git fetch origin main
+            git checkout -B publish-state origin/main
+            mkdir -p .state
+            cp incoming/build-info.json .state/r5c.json
+            git add -- .state/r5c.json
+            if git diff --cached --quiet; then
+              echo 'Recorded state already matches this release.'
+              exit 0
+            fi
+            git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m "Record successful R5C firmware build $TAG"
+            git push origin HEAD:main || echo '::warning::State sync lost a race; next check will retry.'
+            exit 0
+          fi
           [ "$BASE_SHA" = "$EXPECTED_BASE" ] || { echo 'Unexpected build base'; exit 1; }
           current=$(git ls-remote origin refs/heads/main | cut -f1)
           [ "$current" = "$BASE_SHA" ] || { echo 'main advanced during build; retry'; exit 1; }

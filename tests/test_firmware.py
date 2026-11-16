@@ -80,6 +80,20 @@ class VersionAndPolicyTests(unittest.TestCase):
         for name in ("build-info.json", "kernel.config", "packages.manifest", "release-notes.md", "sha256sums"):
             self.assertIn("incoming/" + name, upload)
 
+    def test_scheduled_check_runs_every_twelve_hours(self):
+        workflow = (fw.ROOT / ".github/workflows/R5C-OpenWrt.yml").read_text()
+        self.assertIn("17 */12 * * *", workflow)
+        self.assertNotIn("*/6", workflow)
+
+    def test_test_only_changes_do_not_trigger_builds(self):
+        workflow = (fw.ROOT / ".github/workflows/R5C-OpenWrt.yml").read_text()
+        self.assertNotIn("'tests/**'", workflow)
+
+    def test_publish_skips_existing_release_tag(self):
+        workflow = (fw.ROOT / ".github/workflows/R5C-OpenWrt.yml").read_text()
+        publish = workflow.split("Publish immutable prerelease", 1)[1]
+        self.assertIn('gh release view "$TAG"', publish)
+
     def test_mirror_sync_is_non_forcing_and_protects_main(self):
         workflow = (fw.ROOT / ".github/workflows/R5C-OpenWrt.yml").read_text()
         mirror = workflow.split("- name: Fast-forward verified upstream mirror", 1)[1]
@@ -233,6 +247,35 @@ class RepositoryStateTests(unittest.TestCase):
         fw.check()
         self.assertEqual(self.output.call_args.kwargs["changed"], "true")
 
+    def test_recipe_ignores_test_only_changes(self):
+        seen = []
+
+        def fake_git(*args):
+            seen.append(args)
+            return "stable recipe tree"
+
+        self.git_mock.side_effect = fake_git
+        fw.check()
+        recipe_calls = [call for call in seen if call[:2] == ("ls-tree", "-r")]
+        self.assertTrue(recipe_calls, "recipe must be derived from git ls-tree")
+        for call in recipe_calls:
+            self.assertNotIn("tests", call)
+
+    def test_deterministic_tag_reused_without_force_and_unique_with_force(self):
+        self.record_success()
+        first_tag = json.loads((self.work / "inputs.json").read_text())["tag"]
+        self.assertRegex(first_tag, r"^r5c-25\.12\.6-[0-9a-f]{12}$")
+        fw.check()
+        self.assertEqual(self.output.call_args.kwargs["changed"], "false")
+        second_tag = json.loads((self.work / "inputs.json").read_text())["tag"]
+        self.assertEqual(second_tag, first_tag)
+        fw.check(force=True)
+        self.assertEqual(self.output.call_args.kwargs["changed"], "true")
+        forced_tag = json.loads((self.work / "inputs.json").read_text())["tag"]
+        self.assertTrue(forced_tag.startswith(first_tag + "-"))
+        self.assertEqual(json.loads((self.work / "inputs.json").read_text())["fingerprint"],
+                         json.loads(self.state.read_text())["fingerprint"])
+
     def test_failed_or_running_feed_does_not_advance_successful_state(self):
         self.record_success()
         previous = self.state.read_bytes()
@@ -295,6 +338,21 @@ class PublicationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             fw.validate_publication(self.directory)
 
+    def test_deterministic_tag_is_accepted(self):
+        identity = self.plan["fingerprint"]
+        tag = f"r5c-25.12.6-{identity[:12]}"
+        for image in self.plan["images"]:
+            old_path = self.directory / image["name"]
+            filesystem = "ext4" if "-ext4-" in image["name"] else "squashfs"
+            name = f"{tag}-{filesystem}-sysupgrade.img.gz"
+            old_path.rename(self.directory / name)
+            image["name"] = name
+            image["sha256"] = fw.file_digest(self.directory / name)
+        self.plan["tag"] = tag
+        self.save()
+        with patch.object(fw, "git", return_value=""), patch.object(fw, "guard_upstream"), patch.object(fw, "outputs"):
+            fw.validate_publication(self.directory)
+
     def test_release_tag_cannot_contain_shell_input(self):
         self.plan["tag"] = "r5c-25.12.6;echo unsafe"
         self.save()
@@ -306,6 +364,65 @@ class PublicationTests(unittest.TestCase):
         self.save()
         with self.assertRaises(ValueError):
             fw.validate_publication(self.directory)
+
+
+class ChangelogTests(unittest.TestCase):
+    def setUp(self):
+        self.inputs = {
+            "version": "25.12.6", "kernel_version": "6.12.112",
+            "upstream_sha": "b" * 40, "addon_sha": "d" * 40,
+            "recipe_sha256": "r" * 64, "ib_sha256": "i" * 64,
+            "feed_key_sha256": "k" * 64, "cleanup_sha256": "c" * 64,
+            "profile": "friendlyarm_nanopi-r5c", "lan_address": "192.168.100.1",
+            "indexes": [{"url": "https://example.invalid/a.adb", "sha256": "a" * 64}],
+        }
+        self.plan = {"fingerprint": "f" * 64, "tag": "r5c-25.12.6-ffffffffffff",
+                     "inputs": dict(self.inputs)}
+        self.old_inputs = dict(self.inputs, version="25.12.5", kernel_version="6.12.111",
+                               upstream_sha="a" * 40, addon_sha="c" * 40, recipe_sha256="q" * 64,
+                               indexes=[{"url": "https://example.invalid/a.adb", "sha256": "9" * 64}])
+        self.previous = {"fingerprint": "e" * 64, "tag": "r5c-25.12.6-eeeeeeeeeeee",
+                         "inputs": self.old_inputs}
+
+    def test_initial_build_notes(self):
+        self.assertEqual(fw.describe_changes(self.plan, {}, [], []),
+                         ["- Initial automated build with these inputs."])
+
+    def test_forced_rebuild_notes(self):
+        same = {"fingerprint": self.plan["fingerprint"], "tag": self.plan["tag"],
+                "inputs": dict(self.inputs)}
+        lines = fw.describe_changes(self.plan, same, [], [])
+        self.assertEqual(len(lines), 1)
+        self.assertIn("Forced rebuild", lines[0])
+        self.assertIn(self.plan["tag"], lines[0])
+
+    def test_input_changes_are_listed(self):
+        lines = fw.describe_changes(self.plan, self.previous,
+                                    ["profiles/packages.rockchip"], ["abc123 Fix widgets"])
+        text = "\n".join(lines)
+        self.assertIn("25.12.5", text)
+        self.assertIn("6.12.111", text)
+        self.assertIn("aaaaaaaaaaaa", text)
+        self.assertIn("abc123 Fix widgets", text)
+        self.assertIn("cccccccccccc", text)
+        self.assertIn("profiles/packages.rockchip", text)
+        self.assertIn("Package indexes refreshed (1 of 1)", text)
+
+    def test_uncategorized_difference_falls_back_to_manifest_pointer(self):
+        same_inputs = {"fingerprint": "0" * 64, "tag": "r5c-25.12.6-000000000000",
+                       "inputs": dict(self.inputs)}
+        self.assertEqual(fw.describe_changes(self.plan, same_inputs, [], []),
+                         ["- Inputs changed without a categorized difference; see build-info.json."])
+
+    def test_upstream_history_lists_subjects(self):
+        with patch.object(fw, "git", return_value="abc123 Fix widgets\ndef456 Docs\n"):
+            self.assertEqual(fw.upstream_commits("a" * 40, "b" * 40),
+                             ["abc123 Fix widgets", "def456 Docs"])
+
+    def test_upstream_history_failure_falls_back_to_shas(self):
+        with patch.object(fw, "git", side_effect=subprocess.CalledProcessError(1, "git")):
+            self.assertEqual(fw.upstream_commits("a" * 40, "b" * 40), [])
+        self.assertEqual(fw.upstream_commits("a" * 40, "a" * 40), [])
 
 
 if __name__ == "__main__":
