@@ -14,7 +14,7 @@
 
 ## 内核、eBPF 与优化边界
 
-当前 YAOF 使用官方 ImageBuilder，**不自行重编内核，也不应用历史 YAOF fullcone 内核补丁**。那些补丁不在当前源码的构建链中，不应重新混入第一阶段。Linux 更新必须经过 OpenWrt 的配置、设备支持、补丁和模块 ABI 集成；不能直接替换成 kernel.org 最新内核。
+本 fork 与当前 YAOF 上游使用相同的官方 ImageBuilder 内核来源，**不是本 fork 删除了现行 YAOF 的内核补丁**。当前上游迁移到 ImageBuilder 后，本身就不再应用历史 fullcone 等自定义内核补丁；那些旧补丁不在现行构建链中。官方镜像仍包含 OpenWrt 集成的内核补丁、设备支持和模块 ABI，不是直接换成 kernel.org 原始内核。恢复某个历史内核功能需要单独确定移植目标，不能将旧补丁无条件混入现行基线。
 
 实际每次构建的内核版本、配置和软件包记录在成功状态与 Release 的 `kernel.config`、`packages.manifest`、`build-info.json`，以它们为准，不在本文冻结“最新版本”。评估升级时重新查询 kernel.org 当前 LTS/稳定发布与 OpenWrt 的 Rockchip 支持、补丁和模块 ABI。较新的版本是候选，不证明它在 R5C 上更快、更稳。
 
@@ -26,9 +26,14 @@
 - FlowCone 声明需要 Linux 6.6+、BPF、TC 和原生或外挂 BTF。现有基线满足其静态基础条件，不能据此替代 verifier、挂载与流量的实机检查。
 - `vmlinux-btf` 使用 SDK 的内核头和配置生成 detached BTF，不是官方内核直接导出的完整运行时 BTF。CI 校验文件格式、内核版本关联和包存在性，不保证所有内部类型布局在运行时都正确。
 - 保留 `system-addon` 的网络参数、Ring Buffer、网卡卸载和 zram 设置；CI 检查关键优化脚本存在。
-- Rockchip 配置排除了 `kmod-tcp-bbr3`，第一阶段不重新添加。内核中 BBR 模块可用，不等于固件已安装或默认启用 BBR；不作这种保证。
+- 当前 R5C 不启用 BBR3；这是遵循 YAOF 上游 Rockchip 配置的 `-kmod-tcp-bbr3`，不是本 fork 单独删除了它。上游提交没有说明排除原因，不能据此声称 R5C 已被证明不兼容 BBR3。第一阶段未做加回该第三方模块的 ABI、功能与性能验证，因此先遵循上游选择。
+- 当前产物的内核编译默认 TCP 算法为 CUBIC，包清单中没有 BBR/BBR3；实际运行时的有效算法仍需在设备上检查，不能把编译配置当作实机观测。BBR3 是本机 TCP 拥塞控制算法，不是 BPF、TC、FullCone NAT 的前提，也不会自动改变所有经路由器转发的 TCP 连接。
 
 ImageBuilder 不能改变编译后的内核配置。未安装、未加载的模块通常不会消耗运行时内存；裁剪驱动不能直接推导出更高性能。尤其不能为减小体积删掉 BPF、TC、cgroup、防火墙、网络存储、热管理或需要的无线功能。
+
+“包已包含、内核基础能力存在”不等于“YAOF 全部功能已正常运行”。普通路由、防火墙、VPN 和 LuCI 有官方内核及所需包作为基础；FlowCone 的静态最低要求也可满足，但实际加载、NAT 行为和代理协同需要实机验证。
+
+特别是 dae 包 Makefile 声明了 `+@KERNEL_XDP_SOCKETS`，而当前官方内核的 `CONFIG_XDP_SOCKETS` 未开启：SDK 的包选择不能让 ImageBuilder 重编内核。这是需要核验的包声明与实际内核配置差异。当前固定版本 dae 源码中未发现显式 AF_XDP socket 使用路径，因此不能只凭该开关关闭就断言整个 dae 无法运行；也不能反向宣称全部功能已兼容。dae/Honk/FlowCone 的 BPF 程序加载、外挂 BTF 类型布局、TC/TCX 挂载及与 SQM/flow offload 的组合必须纳入实机验收。
 
 参考：
 
@@ -38,6 +43,8 @@ ImageBuilder 不能改变编译后的内核配置。未安装、未加载的模�
 - https://github.com/QiuSimons/OpenWrt-Add/tree/master/apps/system-addon
 - https://github.com/QiuSimons/vmlinux-btf
 - https://github.com/QiuSimons/FlowCone
+- https://github.com/QiuSimons/YAOF/commit/c7540bb69bd7753cde698e5a395eb16393799ab9
+- https://github.com/QiuSimons/OpenWrt-Add/blob/aefd16b9730679bdd016167408a24b8f485786e5/apps/luci-app-dae/dae/Makefile
 
 ## 自动更新链路
 
