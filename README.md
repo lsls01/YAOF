@@ -25,7 +25,7 @@
 - 纯 JS 现代 LuCI 界面，彻底淘汰老旧 Lua CBI 与 luci-compat
 - 首次开机动态初始化中文环境、国内 NTP、国内软件源镜像及 Vantage 现代主题与实时网络仪表盘
 - 插件包含：HomeProxy、Nikki、Honk / dae (基于 eBPF 的透明代理)、FlowCone (基于 eBPF 的 FullCone NAT)、WireGuard、ZeroTier、SQM (CAKE / FQ_Codel)、NATMap-T、Bandix (实时流量监控)、AP-Modem、ARP 绑定、AirConnect、DDNS、UPnP、3cat
-- 保留上游 system-addon 的网络参数、网卡 Ring Buffer 和卸载设置；R5C 沿用官方内核，不加入已被 Rockchip 配置排除的 BBR3
+- 保留上游 system-addon 的网络参数、网卡 Ring Buffer 和卸载设置；R5C 沿用官方内核及官方 BBR 模块选择，BBR3 仅随上游保留在 x86 专属包配置中，不加入 R5C
 - 支持 iOS / Android 手机 USB 共享网络 (RNDIS / CDC-Ether / usbmuxd 随身 WiFi)
 - X86: 覆盖 Intel、Realtek 2.5G、Mellanox 10G/25G、VirtIO/VMXNet3 虚拟化网卡及 Intel 核显 (i915 DRM)
 - NanoPi 系列：支持 R2S / R2C / R3S / R4S / R5C；R5C 使用官方双 2.5G 网卡和无线设备 Profile

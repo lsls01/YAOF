@@ -26,8 +26,8 @@
 - FlowCone 声明需要 Linux 6.6+、BPF、TC 和原生或外挂 BTF。现有基线满足其静态基础条件，不能据此替代 verifier、挂载与流量的实机检查。
 - `vmlinux-btf` 使用 SDK 的内核头和配置生成 detached BTF，不是官方内核直接导出的完整运行时 BTF。CI 校验文件格式、内核版本关联和包存在性，不保证所有内部类型布局在运行时都正确。
 - 保留 `system-addon` 的网络参数、Ring Buffer、网卡卸载和 zram 设置；CI 检查关键优化脚本存在。
-- 当前 R5C 不启用 BBR3；这是遵循 YAOF 上游 Rockchip 配置的 `-kmod-tcp-bbr3`，不是本 fork 单独删除了它。上游提交没有说明排除原因，不能据此声称 R5C 已被证明不兼容 BBR3。第一阶段未做加回该第三方模块的 ABI、功能与性能验证，因此先遵循上游选择。
-- 当前产物的内核编译默认 TCP 算法为 CUBIC，包清单中没有 BBR/BBR3；实际运行时的有效算法仍需在设备上检查，不能把编译配置当作实机观测。BBR3 是本机 TCP 拥塞控制算法，不是 BPF、TC、FullCone NAT 的前提，也不会自动改变所有经路由器转发的 TCP 连接。
+- 当前上游将官方 BBR（BBR1）放在通用包清单，将 BBR3 放在 x86 专属包清单。R5C 已自动继承官方 `kmod-tcp-bbr`，不启用 BBR3；不是本 fork 单独删除了上游的内核优化。上游提交没有解释平台选择的原因，不能据此声称 R5C 已被证明不兼容 BBR3。第一阶段未做该第三方模块的 ABI、功能与性能验证，因此先遵循上游的平台选择。
+- 内核编译默认值仍可能是 CUBIC，但官方 BBR 包包含请求选择 `bbr` 的 sysctl 配置；不能仅凭编译默认值断言固件没有 BBR。是否安装看实际包清单，设备生效算法用 `sysctl net.ipv4.tcp_congestion_control` 查看，用户自定义 sysctl 也可能覆盖默认配置。BBR/BBR3 是本机 TCP 拥塞控制算法，不是 BPF、TC、FullCone NAT 的前提，也不会自动改变所有经路由器转发的 TCP 连接。
 
 ImageBuilder 不能改变编译后的内核配置。未安装、未加载的模块通常不会消耗运行时内存；裁剪驱动不能直接推导出更高性能。尤其不能为减小体积删掉 BPF、TC、cgroup、防火墙、网络存储、热管理或需要的无线功能。
 
@@ -43,7 +43,8 @@ ImageBuilder 不能改变编译后的内核配置。未安装、未加载的模�
 - https://github.com/QiuSimons/OpenWrt-Add/tree/master/apps/system-addon
 - https://github.com/QiuSimons/vmlinux-btf
 - https://github.com/QiuSimons/FlowCone
-- https://github.com/QiuSimons/YAOF/commit/c7540bb69bd7753cde698e5a395eb16393799ab9
+- https://github.com/QiuSimons/YAOF/commit/fb2fc542411461c4856d2137ae19a263a8ed070e
+- https://github.com/openwrt/openwrt/blob/v25.12.6/package/kernel/linux/files/sysctl-tcp-bbr.conf
 - https://github.com/QiuSimons/OpenWrt-Add/blob/aefd16b9730679bdd016167408a24b8f485786e5/apps/luci-app-dae/dae/Makefile
 
 ## 自动更新链路
