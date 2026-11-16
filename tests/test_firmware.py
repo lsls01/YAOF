@@ -8,12 +8,15 @@ import subprocess
 import tarfile
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 MODULE = Path(__file__).resolve().parents[1] / "scripts/firmware.py"
 spec = importlib.util.spec_from_file_location("firmware", MODULE)
+if spec is None or spec.loader is None:
+    raise ImportError("Unable to load the firmware module for testing")
+loader = spec.loader
 fw = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(fw)
+loader.exec_module(fw)
 
 
 class VersionAndPolicyTests(unittest.TestCase):
@@ -86,13 +89,51 @@ class VersionAndPolicyTests(unittest.TestCase):
                 member = tarfile.TarInfo(name)
                 member.size = len(data)
                 bundle.addfile(member, io.BytesIO(data))
-        process = unittest.mock.Mock(stdout=io.BytesIO(stream.getvalue()))
+        process = Mock(stdout=io.BytesIO(stream.getvalue()))
         process.wait.return_value = 0
         with patch.object(fw.subprocess, "Popen", return_value=process):
             urls, version, config = fw.imagebuilder_metadata(Path("archive"))
         self.assertEqual(version, "6.12.112")
         self.assertIn("CONFIG_BPF=y", config)
         self.assertEqual(len(urls), 1)
+
+    def test_missing_decompressor_stream_is_rejected(self):
+        process = Mock(stdout=None)
+        with patch.object(fw.subprocess, "Popen", return_value=process):
+            with self.assertRaisesRegex(ValueError, "did not provide a stream"):
+                fw.imagebuilder_metadata(Path("archive"))
+        process.wait.assert_called_once()
+
+    def test_unreadable_metadata_is_rejected_and_decompressor_closed(self):
+        member = tarfile.TarInfo("ib/repositories")
+        member.size = 10
+        bundle = MagicMock()
+        bundle.__iter__.return_value = [member]
+        bundle.extractfile.return_value = None
+        manager = MagicMock()
+        manager.__enter__.return_value = bundle
+        process = Mock(stdout=io.BytesIO(b"archive"))
+        with patch.object(fw.subprocess, "Popen", return_value=process), \
+                patch.object(fw.tarfile, "open", return_value=manager):
+            with self.assertRaisesRegex(ValueError, "metadata member"):
+                fw.imagebuilder_metadata(Path("archive"))
+        self.assertTrue(process.stdout.closed)
+        process.wait.assert_called_once()
+
+    def test_unrecognized_kernel_version_is_rejected(self):
+        stream = io.BytesIO()
+        entries = {"ib/repositories": b"https://downloads.openwrt.org/packages/packages.adb\n",
+                   "ib/build_dir/linux-rockchip/linux-custom/.config": b"CONFIG_BPF=y\n"}
+        with tarfile.open(fileobj=stream, mode="w") as bundle:
+            for name, data in entries.items():
+                member = tarfile.TarInfo(name)
+                member.size = len(data)
+                bundle.addfile(member, io.BytesIO(data))
+        process = Mock(stdout=io.BytesIO(stream.getvalue()))
+        process.wait.return_value = 0
+        with patch.object(fw.subprocess, "Popen", return_value=process):
+            with self.assertRaisesRegex(ValueError, "kernel version"):
+                fw.imagebuilder_metadata(Path("archive"))
 
     def test_gzip_integrity_accepts_fwtool_trailer_and_rejects_truncation(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -134,8 +175,8 @@ class RepositoryStateTests(unittest.TestCase):
         for name, value in (("ROOT", self.root), ("WORK", self.work), ("STATE", self.state)):
             self.stack.enter_context(patch.object(fw, name, value))
         self.stack.enter_context(patch.object(fw, "config", return_value=self.cfg))
-        self.stack.enter_context(patch.object(fw, "merge_upstream", side_effect=lambda cfg: self.source.copy()))
-        self.stack.enter_context(patch.object(fw, "git", side_effect=lambda *args: self.recipe))
+        self.stack.enter_context(patch.object(fw, "merge_upstream", side_effect=lambda _cfg: self.source.copy()))
+        self.stack.enter_context(patch.object(fw, "git", side_effect=lambda *_args: self.recipe))
         kernel = '\n'.join(key + "=y" for key in self.cfg["required_kernel_options"])
         self.stack.enter_context(patch.object(fw, "imagebuilder_metadata", return_value=(
             ["https://downloads.openwrt.org/test/packages.adb"], "6.12.112", kernel)))

@@ -119,20 +119,34 @@ def merge_upstream(cfg):
 def imagebuilder_metadata(archive):
     found = {}
     process = subprocess.Popen(["zstd", "-dc", str(archive)], stdout=subprocess.PIPE)
-    with tarfile.open(fileobj=process.stdout, mode="r|") as bundle:
-        for member in bundle:
-            if member.isfile() and (member.name.endswith("/repositories") or
-                                     ("/linux-" in member.name and member.name.endswith("/.config"))):
-                if member.size > 2_000_000:
-                    raise ValueError("Unexpectedly large ImageBuilder metadata")
-                found[member.name] = bundle.extractfile(member).read().decode()
-    process.stdout.close()
-    if process.wait() != 0:
+    stream = process.stdout
+    if stream is None:
+        process.wait()
+        raise ValueError("ImageBuilder decompressor did not provide a stream")
+    try:
+        with tarfile.open(fileobj=stream, mode="r|") as bundle:
+            for member in bundle:
+                if member.isfile() and (member.name.endswith("/repositories") or
+                                         ("/linux-" in member.name and member.name.endswith("/.config"))):
+                    if member.size > 2_000_000:
+                        raise ValueError("Unexpectedly large ImageBuilder metadata")
+                    metadata = bundle.extractfile(member)
+                    if metadata is None:
+                        raise ValueError("Unable to read ImageBuilder metadata member")
+                    with metadata:
+                        found[member.name] = metadata.read().decode()
+    finally:
+        stream.close()
+        return_code = process.wait()
+    if return_code != 0:
         raise ValueError("Unable to decompress ImageBuilder")
     repositories = next(value for name, value in found.items() if name.endswith("/repositories"))
     kernel_name, kernel_config = next((name, value) for name, value in found.items()
                                      if name.endswith("/.config"))
-    kernel_version = re.search(r"/linux-(\d+\.\d+\.\d+)/", kernel_name).group(1)
+    version_match = re.search(r"/linux-(\d+\.\d+\.\d+)/", kernel_name)
+    if version_match is None:
+        raise ValueError("Unrecognized ImageBuilder kernel version")
+    kernel_version = version_match.group(1)
     urls = [line.strip() for line in repositories.splitlines()
             if line.strip() and not line.lstrip().startswith("#")]
     if not urls or any(not u.startswith("https://downloads.openwrt.org/") or
