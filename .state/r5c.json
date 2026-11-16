@@ -1,5 +1,5 @@
 {
-  "fingerprint": "b34b2e1ef795a73e00d65c148e3a9d7b0b15d692908d43a2bdd241cf2258f98e",
+  "fingerprint": "724cbd0bbf979fb083fd205c2cf617b4142a9abc50b31dd5767ea0148e666931",
   "ib_archive": ".cache/imagebuilder/openwrt-imagebuilder-25.12.6-rockchip-armv8.Linux-x86_64.tar.zst",
   "images": [
     {
@@ -18,9 +18,9 @@
           "version": "25.12.6"
         }
       },
-      "name": "r5c-25.12.6-b34b2e1ef795-43826282730-1-ext4-sysupgrade.img.gz",
-      "sha256": "1ef2572ecdd420ed41be9fb5273a5aba5a4f912a91db2c5b62529a5a9157cfea",
-      "size": 99513020
+      "name": "r5c-25.12.6-724cbd0bbf97-43830353415-1-ext4-sysupgrade.img.gz",
+      "sha256": "7fbb21c924c8227ea215e8b8e3368ccf86104b249b3982b71925602c778e5ea7",
+      "size": 99511308
     },
     {
       "disk_bytes": 1140850688,
@@ -38,9 +38,9 @@
           "version": "25.12.6"
         }
       },
-      "name": "r5c-25.12.6-b34b2e1ef795-43826282730-1-squashfs-sysupgrade.img.gz",
-      "sha256": "9ae0f815291ebd1f0f3bb2ffde45a5b4e93aaccb6ced0d4a85f04782334cdb44",
-      "size": 77635313
+      "name": "r5c-25.12.6-724cbd0bbf97-43830353415-1-squashfs-sysupgrade.img.gz",
+      "sha256": "9b48829ab1aa8e30008f4c992de222f805c08236f911b61b28f23fffa53377c6",
+      "size": 77639508
     }
   ],
   "inputs": {
@@ -98,8 +98,8 @@
     "kernel_version": "6.12.112",
     "lan_address": "192.168.100.1",
     "profile": "friendlyarm_nanopi-r5c",
-    "recipe_sha256": "75a0af151ca1dbd1ed376127003ea7214516a756599d06c69817a60e98d168fd",
-    "upstream_sha": "c7540bb69bd7753cde698e5a395eb16393799ab9",
+    "recipe_sha256": "82a28b74f6372dfb21c88ae1af2d9d55ca0e9c40a1582e70b876c12b1429e3df",
+    "upstream_sha": "fb2fc542411461c4856d2137ae19a263a8ed070e",
     "version": "25.12.6"
   },
   "kernel_capabilities": {
@@ -116,11 +116,11 @@
     "CONFIG_XDP_SOCKETS": "n"
   },
   "source": {
-    "base_sha": "02a9e4533546f1eddb76bf843235c6daf3398423",
-    "tree": "82f220c2308a898169cce30b460b004d8c6c15fd",
-    "upstream_sha": "c7540bb69bd7753cde698e5a395eb16393799ab9"
+    "base_sha": "f9a2209566c08bfe60bda9980b78bd638fe272ce",
+    "tree": "3d39bf90f88eefc2ff33738dbf1c07a10805d99e",
+    "upstream_sha": "fb2fc542411461c4856d2137ae19a263a8ed070e"
   },
-  "tag": "r5c-25.12.6-b34b2e1ef795-43826282730-1",
+  "tag": "r5c-25.12.6-724cbd0bbf97-43830353415-1",
   "verification": {
     "default_lan_in_rootfs": "192.168.100.1",
     "detached_btf_sha256": "159adcc88d1c12b47ea5a7c1c9f7092999726f029c0d2195cc1efa3ab15d8c8c",
