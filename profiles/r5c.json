@@ -1,0 +1,38 @@
+{
+  "release_repository": "lsls01/YAOF",
+  "upstream_repository": "QiuSimons/YAOF",
+  "upstream_branch": "25.12",
+  "release_series": "25.12",
+  "target": "rockchip",
+  "subtarget": "armv8",
+  "profile": "friendlyarm_nanopi-r5c",
+  "packages_profile": "packages.rockchip",
+  "extra_packages": ["curl", "jsonfilter"],
+  "lan_address": "192.168.100.1",
+  "addon_repository": "QiuSimons/OpenWrt-Add",
+  "addon_workflow": "build-feed.yml",
+  "feed_url": "https://qiusimons.github.io/OpenWrt-Add/aarch64_generic/packages.adb",
+  "feed_key_url": "https://qiusimons.github.io/OpenWrt-Add/keys/custom-feed.rsa.pub",
+  "feed_key_sha256": "fa7fa987fead9e3c8657108e2da1c25c4be8daab711035f499c361107d26a03c",
+  "required_packages": [
+    "firewall4",
+    "dnsmasq-full",
+    "system-addon",
+    "flowcone",
+    "dae",
+    "honk",
+    "vmlinux-btf",
+    "kmod-sched-core",
+    "kmod-sched-bpf"
+  ],
+  "required_kernel_options": [
+    "CONFIG_BPF",
+    "CONFIG_BPF_SYSCALL",
+    "CONFIG_BPF_JIT",
+    "CONFIG_BPF_UNPRIV_DEFAULT_OFF",
+    "CONFIG_CGROUP_BPF",
+    "CONFIG_NET_CLS_ACT",
+    "CONFIG_NET_CLS_BPF",
+    "CONFIG_NET_ACT_BPF"
+  ]
+}

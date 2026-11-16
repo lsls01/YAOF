@@ -86,17 +86,30 @@ IB_DIR="${WORK_DIR}/${IB_NAME}"
 
 if [ ! -d "$IB_DIR" ]; then
     IB_ARCHIVE="${WORK_DIR}/${IB_NAME}.tar.zst"
-    IB_URL="https://downloads.openwrt.org/releases/${VERSION}/targets/${TARGET}/${SUBTARGET}/${IB_NAME}.tar.zst"
-    log "Downloading ImageBuilder: ${IB_URL}"
-    curl -fsSL --retry 3 --retry-delay 2 "$IB_URL" -o "$IB_ARCHIVE" || die "Failed to download ImageBuilder archive"
+    IB_BASE="https://downloads.openwrt.org/releases/${VERSION}/targets/${TARGET}/${SUBTARGET}"
+    if [ -n "${YAOF_IMAGEBUILDER_ARCHIVE:-}" ]; then
+        cp -f "$YAOF_IMAGEBUILDER_ARCHIVE" "$IB_ARCHIVE"
+    else
+        log "Downloading ImageBuilder: ${IB_BASE}/${IB_NAME}.tar.zst"
+        curl -fsSL --retry 3 --retry-delay 2 "${IB_BASE}/${IB_NAME}.tar.zst" -o "$IB_ARCHIVE" || die "Failed to download ImageBuilder archive"
+    fi
+    expected=$(curl -fsSL --retry 3 "${IB_BASE}/sha256sums" | awk -v name="${IB_NAME}.tar.zst" '$2 == "*" name || $2 == name { print $1 }')
+    [[ "$expected" =~ ^[0-9a-f]{64}$ ]] || die "ImageBuilder checksum is unavailable"
+    printf '%s  %s\n' "$expected" "$IB_ARCHIVE" | sha256sum -c - || die "ImageBuilder checksum mismatch"
     tar --zstd -xf "$IB_ARCHIVE" -C "$WORK_DIR"
     rm -f "$IB_ARCHIVE"
 fi
 
 mkdir -p "${IB_DIR}/keys"
 KEY_URL="https://qiusimons.github.io/OpenWrt-Add/keys/custom-feed.rsa.pub"
-log "Fetching feed signing key: ${KEY_URL}"
-curl -fsSL --retry 3 --retry-delay 2 "$KEY_URL" -o "${IB_DIR}/keys/custom-feed.rsa.pub" || die "Failed to download feed signing key"
+if [ -n "${YAOF_FEED_KEY_FILE:-}" ]; then
+    cp -f "$YAOF_FEED_KEY_FILE" "${IB_DIR}/keys/custom-feed.rsa.pub"
+else
+    log "Fetching feed signing key: ${KEY_URL}"
+    curl -fsSL --retry 3 --retry-delay 2 "$KEY_URL" -o "${IB_DIR}/keys/custom-feed.rsa.pub" || die "Failed to download feed signing key"
+fi
+expected_key=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["feed_key_sha256"])' "${ROOT_DIR}/profiles/r5c.json")
+printf '%s  %s\n' "$expected_key" "${IB_DIR}/keys/custom-feed.rsa.pub" | sha256sum -c - || die "Feed signing key changed; manual review required"
 
 FEED_URL="https://qiusimons.github.io/OpenWrt-Add/${ARCH}/packages.adb"
 if ! grep -qxF "$FEED_URL" "${IB_DIR}/repositories"; then
@@ -110,11 +123,19 @@ mkdir -p "$OVERLAY_DIR"
 if [ -d "${ROOT_DIR}/files" ]; then
     cp -af "${ROOT_DIR}/files/." "$OVERLAY_DIR/"
 fi
+if [ -n "${YAOF_RELEASE_FILE:-}" ]; then
+    mkdir -p "${OVERLAY_DIR}/etc"
+    cp -f "$YAOF_RELEASE_FILE" "${OVERLAY_DIR}/etc/yaof-release.json"
+fi
 
 mkdir -p "${OVERLAY_DIR}/usr/bin"
-FUCK_URL="https://raw.githubusercontent.com/QiuSimons/OpenWrt-Add/master/core/tools/clean-overlay.sh"
-log "Fetching fuck utility: ${FUCK_URL}"
-curl -fsSL --retry 3 --retry-delay 2 "$FUCK_URL" -o "${OVERLAY_DIR}/usr/bin/fuck" || die "Failed to download clean-overlay.sh"
+if [ -n "${YAOF_CLEAN_OVERLAY_FILE:-}" ]; then
+    cp -f "$YAOF_CLEAN_OVERLAY_FILE" "${OVERLAY_DIR}/usr/bin/fuck"
+else
+    FUCK_URL="https://raw.githubusercontent.com/QiuSimons/OpenWrt-Add/master/core/tools/clean-overlay.sh"
+    log "Fetching fuck utility: ${FUCK_URL}"
+    curl -fsSL --retry 3 --retry-delay 2 "$FUCK_URL" -o "${OVERLAY_DIR}/usr/bin/fuck" || die "Failed to download clean-overlay.sh"
+fi
 chmod +x "${OVERLAY_DIR}/usr/bin/fuck"
 
 mkdir -p "${OVERLAY_DIR}/etc/apk/keys"
@@ -135,6 +156,9 @@ load_packages() {
 }
 
 PACKAGES="$(load_packages "${ROOT_DIR}/profiles/packages.common") $(load_packages "${ROOT_DIR}/profiles/${PACKAGES_PROFILE}")"
+if [ "$PROFILE" = "friendlyarm_nanopi-r5c" ]; then
+    PACKAGES="$PACKAGES $(python3 -c 'import json,sys; print(" ".join(json.load(open(sys.argv[1]))["extra_packages"]))' "${ROOT_DIR}/profiles/r5c.json")"
+fi
 BUILD_LOG="${WORK_DIR}/build.log"
 SKIPPED_PACKAGES=""
 MAX_SKIP_ROUNDS=5
@@ -157,10 +181,17 @@ missing_packages_from_log() {
 }
 
 log "Assembling firmware for ${PROFILE} (${VERSION})..."
+if [ "$PROFILE" = "friendlyarm_nanopi-r5c" ]; then
+    YAOF_STRICT_PACKAGES=1
+fi
 skip_round=0
 while :; do
     if build_firmware "$PACKAGES"; then
         break
+    fi
+
+    if [ "${YAOF_STRICT_PACKAGES:-0}" = "1" ]; then
+        die "Strict build failed; required packages will not be silently skipped. See ${BUILD_LOG}"
     fi
 
     missing="$(missing_packages_from_log "$BUILD_LOG" | sort -u)"
@@ -203,10 +234,12 @@ if [ "$TARGET" = "x86" ]; then
     MATCH_PATTERN="*combined-efi.img.gz"
 fi
 
+[ -n "$(find "$IB_BIN_DIR" -type f -name "$MATCH_PATTERN" -print -quit)" ] || die "No firmware images were produced"
 find "$IB_BIN_DIR" -type f -name "$MATCH_PATTERN" | while read -r img; do
     fname=$(basename "$img")
     clean_suffix=$(echo "$fname" | sed -E "s/^openwrt-.*-${TARGET}-${SUBTARGET}-${PROFILE}-//")
-    out_name="YAOF-${PLATFORM_LABEL}-${VERSION}-${DATE_STR}-${clean_suffix}"
+    output_prefix="${YAOF_OUTPUT_PREFIX:-YAOF-${PLATFORM_LABEL}-${VERSION}-${DATE_STR}}"
+    out_name="${output_prefix}-${clean_suffix}"
     cp -f "$img" "${OUTPUT_DIR}/${out_name}"
     log "Saved: ${out_name}"
 done

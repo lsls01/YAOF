@@ -1,0 +1,66 @@
+#!/bin/sh
+set -eu
+
+command=${1:-check}
+case "$command" in
+    check|download) ;;
+    *) echo 'Usage: yaof-update [check | download ext4 | download squashfs]' >&2; exit 1 ;;
+esac
+
+release=/etc/yaof-release.json
+[ -s "$release" ] || { echo 'No controlled YAOF release descriptor; use the R5C firmware workflow.' >&2; exit 1; }
+[ "$(cat /tmp/sysinfo/board_name)" = 'friendlyarm,nanopi-r5c' ] || { echo 'This updater only supports NanoPi R5C.' >&2; exit 1; }
+repository=$(jsonfilter -i "$release" -e '@.repository')
+current=$(jsonfilter -i "$release" -e '@.fingerprint')
+printf '%s\n' "$repository" | grep -Eq '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$' || exit 1
+
+work=$(mktemp -d /tmp/yaof-update.XXXXXX)
+trap 'rm -rf "$work"' EXIT HUP INT TERM
+fetch() {
+    curl --fail --silent --show-error --location --retry 3 \
+        --proto '=https' --proto-redir '=https' --connect-timeout 15 \
+        "$1" --output "$2"
+}
+fetch "https://raw.githubusercontent.com/$repository/main/.state/r5c.json" "$work/state.json"
+latest=$(jsonfilter -i "$work/state.json" -e '@.fingerprint')
+tag=$(jsonfilter -i "$work/state.json" -e '@.tag')
+profile=$(jsonfilter -i "$work/state.json" -e '@.inputs.profile')
+[ "$profile" = 'friendlyarm_nanopi-r5c' ] || { echo 'Unexpected release profile.' >&2; exit 1; }
+printf '%s\n' "$latest" | grep -Eq '^[0-9a-f]{64}$' || exit 1
+printf '%s\n' "$tag" | grep -Eq '^r5c-[0-9]+\.[0-9]+\.[0-9]+-[0-9a-f]{12}-[0-9]+-[0-9]+$' || exit 1
+
+if [ "$current" = "$latest" ]; then
+    echo "Already current: $tag (same build inputs)."
+else
+    echo "Update available: $tag"
+fi
+echo "Release: https://github.com/$repository/releases/tag/$tag"
+echo 'Automated prerelease: hardware acceptance and eBPF runtime loading are not guaranteed.'
+[ "$command" = download ] || exit 0
+
+filesystem=${2:-}
+case "$filesystem" in
+    ext4|squashfs) ;;
+    *) echo 'Select ext4 or squashfs explicitly; filesystem changes require care.' >&2; exit 1 ;;
+esac
+name="$tag-$filesystem-sysupgrade.img.gz"
+sha=''
+size=''
+for index in 0 1; do
+    asset=$(jsonfilter -i "$work/state.json" -e "@.images[$index].name")
+    if [ "$asset" = "$name" ]; then
+        sha=$(jsonfilter -i "$work/state.json" -e "@.images[$index].sha256")
+        size=$(jsonfilter -i "$work/state.json" -e "@.images[$index].size")
+    fi
+done
+printf '%s\n' "$sha" | grep -Eq '^[0-9a-f]{64}$' || { echo 'Missing asset checksum.' >&2; exit 1; }
+printf '%s\n' "$size" | grep -Eq '^[0-9]+$' || exit 1
+available=$(df -Pk /tmp | awk 'NR == 2 { print $4 }')
+[ "$available" -gt "$((size / 1024 + 10240))" ] || { echo 'Insufficient free space in /tmp.' >&2; exit 1; }
+fetch "https://github.com/$repository/releases/download/$tag/$name" "$work/$name"
+printf '%s  %s\n' "$sha" "$work/$name" | sha256sum -c -
+sysupgrade -T "$work/$name"
+mv "$work/$name" "/tmp/$name"
+echo "Verified download: /tmp/$name"
+echo 'No firmware has been flashed. Back up settings, then perform the upgrade explicitly.'
+echo "Upgrade command (preserves configuration): sysupgrade /tmp/$name"

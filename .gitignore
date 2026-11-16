@@ -1,6 +1,9 @@
 # Build outputs & artifacts
 /build_*/
 /artifact/
+/.build/
+/.cache/
+__pycache__/
 *.img.gz
 *.sha256
 *.sha256sum

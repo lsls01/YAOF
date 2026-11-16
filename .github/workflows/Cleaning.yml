@@ -1,8 +1,7 @@
 name: Cleaning
 
 on:
-  schedule:
-    - cron: 1 1 * * 1
+  # Cleanup is manual so successful firmware and diagnostics remain available.
   workflow_dispatch:
 
 jobs:
