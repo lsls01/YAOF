@@ -99,7 +99,7 @@ git diff "upstream/$upstream_branch" -- profiles/packages.common profiles/packag
 | 辅助包 | R5C `extra_packages` | 增加 curl、jsonfilter 支持自有更新命令，不改变其他平台清单 |
 | 可追踪更新 | `scripts/firmware.py`、`.state/r5c.json` | 对源码、配方、内核配置和已发布软件源计算输入指纹；状态提交不触发循环构建 |
 | 构建输入与包完整性 | `scripts/build.sh`、R5C 校验脚本 | 校验 ImageBuilder 与公钥、使用固定 addon 清理脚本；R5C 不允许静默跳过所选包 |
-| 发布与镜像 | R5C 工作流 | 只读构建、独立写权限发布、唯一 tag、完整公共校验资产及纯上游镜像快进 |
+| 发布与镜像 | R5C 工作流 | 只读构建、独立写权限发布；相同输入复用同一 tag（强制重建除外），已发布 tag 跳过创建只同步状态；完整公共校验资产及纯上游镜像快进 |
 | 诊断与其他设备 | Cleaning / 旧设备工作流 | 自动清理改为手动；其他设备仍使用原手动入口，不声称已纳入 R5C 同等完整验收 |
 
 通用与平台包清单按当前上游对齐。不要重新加回旧合并留下的冗余排除项，也不要在自动同步时丢掉上述自有差异。
