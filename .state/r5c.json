@@ -1,0 +1,130 @@
+{
+  "fingerprint": "0a740ccdd738d32dbd1e1b1b53a9e53dcc0186965ecd9946fe312d1026c1dd8e",
+  "ib_archive": ".cache/imagebuilder/openwrt-imagebuilder-25.12.6-rockchip-armv8.Linux-x86_64.tar.zst",
+  "images": [
+    {
+      "disk_bytes": 1140850688,
+      "metadata": {
+        "compat_version": "1.0",
+        "metadata_version": "1.1",
+        "supported_devices": [
+          "friendlyarm,nanopi-r5c"
+        ],
+        "version": {
+          "board": "friendlyarm_nanopi-r5c",
+          "dist": "OpenWrt",
+          "revision": "r33311-981c978eff",
+          "target": "rockchip/armv8",
+          "version": "25.12.6"
+        }
+      },
+      "name": "r5c-25.12.6-0a740ccdd738-43824969262-1-ext4-sysupgrade.img.gz",
+      "sha256": "332dcac916808a55ad8cb07066f6b09910113e21ad144a01bc58452bc701ee3f",
+      "size": 99513019
+    },
+    {
+      "disk_bytes": 1140850688,
+      "metadata": {
+        "compat_version": "1.0",
+        "metadata_version": "1.1",
+        "supported_devices": [
+          "friendlyarm,nanopi-r5c"
+        ],
+        "version": {
+          "board": "friendlyarm_nanopi-r5c",
+          "dist": "OpenWrt",
+          "revision": "r33311-981c978eff",
+          "target": "rockchip/armv8",
+          "version": "25.12.6"
+        }
+      },
+      "name": "r5c-25.12.6-0a740ccdd738-43824969262-1-squashfs-sysupgrade.img.gz",
+      "sha256": "0476cbc61a1e86d1bd4429b77dbfa926355c4ffbb7c34c4682f67ec906199c37",
+      "size": 77635239
+    }
+  ],
+  "inputs": {
+    "addon_sha": "aefd16b9730679bdd016167408a24b8f485786e5",
+    "cleanup_sha256": "b895a2fc39b3bf506dddebb39154c7b99bf9953a4d163263abb42902fbd92e04",
+    "device_packages": [
+      "kmod-r8169",
+      "kmod-rtw88-8822ce",
+      "rtl8822ce-firmware",
+      "wpad-basic-mbedtls"
+    ],
+    "feed_key_sha256": "fa7fa987fead9e3c8657108e2da1c25c4be8daab711035f499c361107d26a03c",
+    "ib_name": "openwrt-imagebuilder-25.12.6-rockchip-armv8.Linux-x86_64",
+    "ib_sha256": "cfee81dcfd592a4c28941c2aabf098ccb84d0bd4d2c2eae779bd6e210ae9ddfe",
+    "ib_url": "https://downloads.openwrt.org/releases/25.12.6/targets/rockchip/armv8/openwrt-imagebuilder-25.12.6-rockchip-armv8.Linux-x86_64.tar.zst",
+    "indexes": [
+      {
+        "sha256": "43fc226d4c94e8aac6f5e9b3ee29fd87cbbac606a3e5b95e47b8dfe46f35e437",
+        "url": "https://downloads.openwrt.org/releases/25.12.6/targets/rockchip/armv8/packages/packages.adb"
+      },
+      {
+        "sha256": "993d002ae8ad2e7494b5c223552c9c455144b7b99d538f543cc5566a18001ae3",
+        "url": "https://downloads.openwrt.org/releases/25.12.6/packages/aarch64_generic/base/packages.adb"
+      },
+      {
+        "sha256": "0f3abbe85a4aaa36579018559cdb6aca31ef84c7346111793ff4224f3276940d",
+        "url": "https://downloads.openwrt.org/releases/25.12.6/targets/rockchip/armv8/kmods/6.12.112-1-5eacf764ba9415e5d7ff4aecb2e45c4d/packages.adb"
+      },
+      {
+        "sha256": "1c830d7fb697589ef30eed07773e82391cc0a9c6d93926d737548e2f28a0f0bd",
+        "url": "https://downloads.openwrt.org/releases/25.12.6/packages/aarch64_generic/luci/packages.adb"
+      },
+      {
+        "sha256": "6ff85aee5680a92848596c3cad60bb90374bdda428dba3dab35f5709d5665f5b",
+        "url": "https://downloads.openwrt.org/releases/25.12.6/packages/aarch64_generic/packages/packages.adb"
+      },
+      {
+        "sha256": "6a368ca6cbfd4ae1a9b8ca7299a866db3a90f427091936044ac87af6524549b8",
+        "url": "https://downloads.openwrt.org/releases/25.12.6/packages/aarch64_generic/routing/packages.adb"
+      },
+      {
+        "sha256": "b6755fc1e2f4461ce9a1131ade80e09ca7ff7269a57d084c813cd84e68fd0b79",
+        "url": "https://downloads.openwrt.org/releases/25.12.6/packages/aarch64_generic/telephony/packages.adb"
+      },
+      {
+        "sha256": "00525f3ee274a2d0fc9f7b2a041517b1a329331f7c7693062c23cdc39b7c9103",
+        "url": "https://downloads.openwrt.org/releases/25.12.6/packages/aarch64_generic/video/packages.adb"
+      },
+      {
+        "sha256": "7772f878e17916f71adc951fbc1c5ab70eeaa25b43e7a7046f3e156f5279a1e4",
+        "url": "https://qiusimons.github.io/OpenWrt-Add/aarch64_generic/packages.adb"
+      }
+    ],
+    "kernel_config_sha256": "0b4a38e3c05c921c3877d3f88a31531fd52369e8105034dced32738471f00497",
+    "kernel_version": "6.12.112",
+    "lan_address": "192.168.100.1",
+    "profile": "friendlyarm_nanopi-r5c",
+    "recipe_sha256": "9b9e569b4333a265950d8bd567ad570fd218c5e8c0ecbbd782e3c286d4f6bc85",
+    "upstream_sha": "c7540bb69bd7753cde698e5a395eb16393799ab9",
+    "version": "25.12.6"
+  },
+  "kernel_capabilities": {
+    "CONFIG_BPF": "y",
+    "CONFIG_BPF_JIT": "y",
+    "CONFIG_BPF_SYSCALL": "y",
+    "CONFIG_BPF_UNPRIV_DEFAULT_OFF": "y",
+    "CONFIG_CGROUP_BPF": "y",
+    "CONFIG_DEBUG_INFO_BTF": "n",
+    "CONFIG_DEFAULT_TCP_CONG": "\"cubic\"",
+    "CONFIG_NET_ACT_BPF": "m",
+    "CONFIG_NET_CLS_ACT": "y",
+    "CONFIG_NET_CLS_BPF": "m",
+    "CONFIG_XDP_SOCKETS": "n"
+  },
+  "source": {
+    "base_sha": "e13591dcaf86488d6ce5428a9ad94690ac851446",
+    "tree": "7dab05f3e006ddaf9367c1dafe25750da9c9f97d",
+    "upstream_sha": "c7540bb69bd7753cde698e5a395eb16393799ab9"
+  },
+  "tag": "r5c-25.12.6-0a740ccdd738-43824969262-1",
+  "verification": {
+    "default_lan_in_rootfs": "192.168.100.1",
+    "detached_btf_sha256": "159adcc88d1c12b47ea5a7c1c9f7092999726f029c0d2195cc1efa3ab15d8c8c",
+    "hardware_tested": false,
+    "required_packages_present": true
+  }
+}
