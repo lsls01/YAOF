@@ -18,9 +18,9 @@
           "version": "25.12.6"
         }
       },
-      "name": "r5c-25.12.6-b34b2e1ef795-43825822107-1-ext4-sysupgrade.img.gz",
-      "sha256": "707c0a83ce3b732cb5ed3c54f6361d463b4842abbaf17236da38777681ec5d5b",
-      "size": 99513057
+      "name": "r5c-25.12.6-b34b2e1ef795-43826282730-1-ext4-sysupgrade.img.gz",
+      "sha256": "1ef2572ecdd420ed41be9fb5273a5aba5a4f912a91db2c5b62529a5a9157cfea",
+      "size": 99513020
     },
     {
       "disk_bytes": 1140850688,
@@ -38,9 +38,9 @@
           "version": "25.12.6"
         }
       },
-      "name": "r5c-25.12.6-b34b2e1ef795-43825822107-1-squashfs-sysupgrade.img.gz",
-      "sha256": "b214307e826b3edec690cf2df3e0d21fbd791d3cb903f680b541536a11cd2110",
-      "size": 77635270
+      "name": "r5c-25.12.6-b34b2e1ef795-43826282730-1-squashfs-sysupgrade.img.gz",
+      "sha256": "9ae0f815291ebd1f0f3bb2ffde45a5b4e93aaccb6ced0d4a85f04782334cdb44",
+      "size": 77635313
     }
   ],
   "inputs": {
@@ -116,11 +116,11 @@
     "CONFIG_XDP_SOCKETS": "n"
   },
   "source": {
-    "base_sha": "39642b7d7a0af7c538daf8ff584f1902e9ad74d7",
-    "tree": "4d1c2727f0783f1fe7e6518301358965d8fbcd4c",
+    "base_sha": "02a9e4533546f1eddb76bf843235c6daf3398423",
+    "tree": "82f220c2308a898169cce30b460b004d8c6c15fd",
     "upstream_sha": "c7540bb69bd7753cde698e5a395eb16393799ab9"
   },
-  "tag": "r5c-25.12.6-b34b2e1ef795-43825822107-1",
+  "tag": "r5c-25.12.6-b34b2e1ef795-43826282730-1",
   "verification": {
     "default_lan_in_rootfs": "192.168.100.1",
     "detached_btf_sha256": "159adcc88d1c12b47ea5a7c1c9f7092999726f029c0d2195cc1efa3ab15d8c8c",
