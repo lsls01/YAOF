@@ -1,5 +1,7 @@
 # R5C 固件维护
 
+维护或改动本项目时先阅读根目录 [AGENTS.md](../AGENTS.md)。本文提供固件流程、验证边界和后续路线；实际配置查 `profiles/r5c.json` 与 `.github/workflows/R5C-OpenWrt.yml`，最新成功产物查 [成功构建状态](../.state/r5c.json) 及对应 Release。
+
 ## 第一阶段约定
 
 - 公开仓库：`lsls01/YAOF`，发布分支为 `main`，上游为 `QiuSimons/YAOF` 的 `25.12` 分支。
@@ -14,7 +16,7 @@
 
 当前 YAOF 使用官方 ImageBuilder，**不自行重编内核，也不应用历史 YAOF fullcone 内核补丁**。那些补丁不在当前源码的构建链中，不应重新混入第一阶段。Linux 更新必须经过 OpenWrt 的配置、设备支持、补丁和模块 ABI 集成；不能直接替换成 kernel.org 最新内核。
 
-首阶段基线的 OpenWrt 25.12.6 发布内核为 6.12.112。调研时 kernel.org 提供 6.12.117、较新的 LTS 6.18.63 和稳定版 7.3.4。这个版本差距真实存在，但不证明新系列在 R5C 上更快、更稳。实际每次构建的内核版本、配置和软件包记录在 Release 的 `kernel.config`、`packages.manifest` 和 `build-info.json`，以它们为准。
+实际每次构建的内核版本、配置和软件包记录在成功状态与 Release 的 `kernel.config`、`packages.manifest`、`build-info.json`，以它们为准，不在本文冻结“最新版本”。评估升级时重新查询 kernel.org 当前 LTS/稳定发布与 OpenWrt 的 Rockchip 支持、补丁和模块 ABI。较新的版本是候选，不证明它在 R5C 上更快、更稳。
 
 已检查官方 ImageBuilder 内的实际内核 `.config`，而非仅看 OpenWrt 默认配置片段：
 
@@ -56,6 +58,25 @@ ImageBuilder 不能改变编译后的内核配置。未安装、未加载的模�
 
 GitHub 定时任务可能延迟；公开仓库长期无活动时定时任务可能在 60 天后被停用。第一阶段不制造 keep-alive 空提交。若需要长期无人值守保证，可在第三阶段加入独立健康检查或外部调度兜底。
 
+## 已验证与待验证
+
+第一阶段已完成自有仓库的实际构建和公开下载核验。证据入口为 [R5C 工作流记录](https://github.com/lsls01/YAOF/actions/workflows/R5C-OpenWrt.yml)、[成功构建状态](../.state/r5c.json) 和它指向的 Release；产物列表与校验值以记录为准。
+
+| 项目 | 当前验证范围 |
+| --- | --- |
+| 单元测试与静态检查 | 更新指纹、无变化跳过、强制重建、上游保护、密钥变化、缓存损坏、资产完整性、默认地址及 Shell/Actions 检查通过 |
+| push 构建与发布 | 自有 main 的实际 R5C 构建、独立发布及成功状态提交通过 |
+| 手动检查 | 输入不变时，实际 GitHub workflow_dispatch 跳过编译和发布 |
+| 手动强制重建 | 输入不变时，实际生成新的唯一 tag 并成功发布；构建输入指纹保持相同 |
+| 镜像和 rootfs | ext4/squashfs 元数据、压缩完整性、必需包、外挂 BTF、网络默认值、更新 descriptor/脚本及上游优化脚本通过 CI 检查 |
+| 公开下载 | 两个镜像及全部校验清单条目已从公开 Release 下载并验证；发布附带被校验的 release-notes.md |
+| 实机验收 | R5C 启动、SD/eMMC、双网口、无线、eBPF verifier/TCX 协同、吞吐、温度及保留配置升级尚未验证 |
+| 固件内更新命令 | 入口和 descriptor 已验证打进 rootfs；在真实 R5C 上执行查询、下载和 sysupgrade -T 仍属于实机验收 |
+| 定时检查 | 六小时 cron 已配置并启用；手动与 push 路径已验证，不把它们说成已经观察到自然定时触发 |
+| 其他设备 | 保留原有手动入口，本阶段未重新实测所有设备 |
+
+CI 的 BTF 检查不是运行时类型布局证明，文件中的默认 IP 也不是已观察到设备启动后的地址。只有用户确认完成实机验收后，才将某个构建认定为已验证稳定版本。
+
 ## 手动触发
 
 网页入口：
@@ -74,7 +95,20 @@ gh workflow run R5C-OpenWrt.yml --repo lsls01/YAOF --ref main
 gh workflow run R5C-OpenWrt.yml --repo lsls01/YAOF --ref main -f force_build=true
 ```
 
+`force_build` 只改变是否重建的判断，不绕过签名密钥、内核能力、软件包完整性或源码保护检查。强制重建输入相同的固件会产生新 tag，但固件内更新查询仍按输入指纹判断是否有实质更新。
+
+自有分支仅修改 README、AGENTS.md 或维护文档时，不改变本地配方指纹，也不匹配 push 构建入口；成功状态提交本身不是新的配方。上游 commit 则属于输入记录，即使只改变上游文档，也会按新输入处理。
+
 其他型号保留原有手动工作流，不自动推进 R5C 的成功状态。自动清理改为手动，避免删除仍需要的回滚固件及诊断。
+
+## 故障与恢复
+
+- 网络暂时失败、缺包或构建期间索引变化：保留现有成功状态和可下载产物。排查工作流日志及失败诊断，恢复后重新 Run workflow；不要手工伪造成功状态。
+- 上游保护文件变化或合并冲突：先 review 对自有配置、权限和兼容性的影响，再在当前 main 上做最小整合。强制重建不会绕过这些保护；不要以强推上游分支覆盖自有 main 来“修复”。
+- 公钥变化：确认上游正式轮换和新公钥来源，再审核配置更新。不要为构建通过取消校验或允许不可信包。
+- 发布失败或留下草稿：确认完整资产后再重试，不修改已有镜像或校验值。只有成功公开发布才能推进 `.state/r5c.json`；新构建使用新 tag。
+- 发布时 main 前进：同步最新自有分支后重新触发，不覆盖期间新增的用户提交。
+- 设备升级失败或不兼容：不使用强制忽略检查的选项。先通过 microSD 验证与恢复，保留设置备份及可启动旧镜像；eMMC/bootloader 处理必须结合实际存储布局。
 
 ## 固件内查询与升级
 
@@ -108,13 +142,15 @@ yaof-update download ext4
 
 ## 产物、源码与许可证
 
-固件不提交到 Git，只放 GitHub Releases。每次发布包含两个镜像、`sha256sums`、实际包清单、实际内核配置与输入记录。固件与记录保持唯一构建标识；不覆盖同版本同日的旧文件。
+固件不提交到 Git，只放 GitHub Releases。每次发布包含两个镜像、`sha256sums`、`packages.manifest`、`kernel.config`、`build-info.json` 和 `release-notes.md`。校验清单中的每个文件都应作为公开资产提供，不能只在 Actions 附件中存在。固件与记录保持唯一构建标识；不覆盖同版本同日的旧文件。
 
 保留 YAOF 的 LICENSE、版权及原有声明。Release 明确提供对应 YAOF、OpenWrt 和 OpenWrt-Add 源码引用，第三方包许可证以各组件为准。发布者须持续确保相应的 Corresponding Source 可取得；单纯给一个会变化的上游主页不等于完成所有源码义务。
 
 版本号、commit 和校验值提供可追溯性，**不保证未来完整重建或逐位复现**。若要长期复现，需额外保留实际 APK、工具链输入及相应源码，不可把短期 Actions cache 当作长期源归档。
 
 ## 第二阶段：先验证，再优化内核
+
+第二、三阶段是候选路线，不属于第一阶段的实施授权；开始前需要用户批准具体范围。
 
 先在 R5C 建立性能和稳定性基线：双网口、PPPoE、NAT、代理、FlowCone、SQM、WireGuard、无线、USB、温度、功耗及长期运行；验证 BPF verifier、TCX 挂载和外挂 BTF 的真实兼容性。
 
@@ -125,6 +161,8 @@ yaof-update download ext4
 3. 自行构建原生 BTF 内核，验证能否替代 shadow BTF，并评估 dae/AF_XDP 等真实需要的配置。
 4. 在确认使用需求后审查编译配置及驱动裁剪；保留硬件恢复、热管理、安全和网络功能。
 5. 再比较较新 LTS，只有回归测试和基准支持时才迁移；不默认追 Linux 主线或 RC。
+
+验收应同时保留调整前后的内核配置、准确模块 ABI、包清单、基准方法和恢复镜像；验证启动、网络功能、安全性及长时间运行，不能只依据短时吞吐或构建成功。没有回归与实机证据时，不替换已验证的基线。
 
 这些工作需要完整源码构建与实机证据，不应在 ImageBuilder 上伪装成内核配置已经变化。
 

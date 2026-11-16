@@ -49,7 +49,7 @@
 - [R5C firmware](https://github.com/lsls01/YAOF/actions/workflows/R5C-OpenWrt.yml) 每 6 小时检查一次；也可 Run workflow，勾选 `force_build` 强制重建。
 - 更新判断使用本仓库 `.state/r5c.json` 的成功构建指纹；软件源变化也会触发，不只比较 OpenWrt 版本号。
 - 固件内 `yaof-update check` 查询本仓库；`yaof-update download squashfs` 或 `yaof-update download ext4` 下载并校验，绝不后台自动刷机。
-- 内核边界、稳定性约束、升级方法及后续阶段见 [R5C 维护说明](docs/r5c.md)。其他设备保留原有手动工作流。
+- 内核边界、稳定性约束、升级方法及后续阶段见 [R5C 维护说明](docs/r5c.md)。维护或修改项目前先阅读 [AGENTS.md](AGENTS.md)；其他设备保留原有手动工作流。
 
 ### 鸣谢
 
