@@ -50,6 +50,7 @@
 - 更新判断使用本仓库 `.state/r5c.json` 的成功构建指纹；软件源变化也会触发，不只比较 OpenWrt 版本号。
 - 固件内 `yaof-update check` 查询本仓库；`yaof-update download squashfs` 或 `yaof-update download ext4` 下载并校验，绝不后台自动刷机。
 - 内核边界、稳定性约束、升级方法及后续阶段见 [R5C 维护说明](docs/r5c.md)。维护或修改项目前先阅读 [AGENTS.md](AGENTS.md)；其他设备保留原有手动工作流。
+- 新 session 开发先核对 [上游能力与优化对齐表](docs/upstream-alignment.md)，其中区分已继承配置、自有差异与待实机验证项。
 
 ### 鸣谢
 

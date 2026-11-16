@@ -180,3 +180,18 @@ jobs:
             echo "https://github.com/$REPOSITORY/releases/tag/$TAG"
             echo 'Hardware acceptance remains unverified; this build is a prerelease.'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fast-forward verified upstream mirror
+        continue-on-error: true
+        env:
+          UPSTREAM_SHA: ${{ steps.assets.outputs.upstream_sha }}
+        run: |
+          mirror_branch=$(python3 -c 'import json; print(json.load(open("profiles/r5c.json"))["upstream_branch"])')
+          [ "$mirror_branch" != main ] || { echo 'Refusing to overwrite the customized main branch'; exit 1; }
+          git check-ref-format "refs/heads/$mirror_branch"
+          if ! git push origin "$UPSTREAM_SHA:refs/heads/$mirror_branch"; then
+            echo '::warning::Upstream mirror requires manual history review; published firmware is unchanged.'
+            echo 'Mirror sync was refused. Preserve the previous mirror and review upstream history before retrying.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "Upstream mirror $mirror_branch now points to $UPSTREAM_SHA." >> "$GITHUB_STEP_SUMMARY"

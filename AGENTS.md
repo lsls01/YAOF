@@ -3,6 +3,7 @@
 ## 开始改动前
 
 - 涉及 R5C、内核/驱动、构建、软件源、默认网络、在线升级或发布时，先阅读 `docs/r5c.md`，按其中已批准阶段的范围工作；后续阶段路线不是自动实施授权。
+- 核对上游能力、优化或平台差异时，先阅读 `docs/upstream-alignment.md`；区分源码继承、成功产物和实机生效，不从版本号或分支提示推断功能。
 - 修改构建配置前读取 `profiles/r5c.json` 和 `.github/workflows/R5C-OpenWrt.yml`；核对最新固件时读取 `.state/r5c.json` 及其对应 Release，不把固定版本号或 GitHub latest 接口当作成功构建状态。
 - 推送前执行 `git remote -v`，确认 origin 为 https://github.com/lsls01/YAOF；main 是自有发布分支，upstream 仅用于拉取 QiuSimons/YAOF。不要向上游推送本地定制，也不要强制覆盖自有 main 来同步上游。
 
@@ -23,5 +24,5 @@ git diff --check
 
 ## 文档维护
 
-- 配置、更新流程、兼容性边界或验证范围改变时，同步更新 `docs/r5c.md`；`README.md` 保留用户入口并链接到维护说明，不复制完整流程。
+- 流程、兼容性边界或验证范围改变时更新 `docs/r5c.md`；能力、优化或平台对齐变化时更新 `docs/upstream-alignment.md`。`README.md` 保留用户入口，不复制完整流程。
 - 最新版本、指纹、镜像校验值和包清单以成功发布记录为准，不在本文件维护版本快照或会话历史。

@@ -80,6 +80,15 @@ class VersionAndPolicyTests(unittest.TestCase):
         for name in ("build-info.json", "kernel.config", "packages.manifest", "release-notes.md", "sha256sums"):
             self.assertIn("incoming/" + name, upload)
 
+    def test_mirror_sync_is_non_forcing_and_protects_main(self):
+        workflow = (fw.ROOT / ".github/workflows/R5C-OpenWrt.yml").read_text()
+        mirror = workflow.split("- name: Fast-forward verified upstream mirror", 1)[1]
+        self.assertIn("continue-on-error: true", mirror)
+        self.assertIn('[ "$mirror_branch" != main ]', mirror)
+        self.assertIn('git check-ref-format "refs/heads/$mirror_branch"', mirror)
+        self.assertIn('git push origin "$UPSTREAM_SHA:refs/heads/$mirror_branch"', mirror)
+        self.assertNotIn("--force", mirror)
+
     def test_imagebuilder_metadata_reads_real_tar_members(self):
         stream = io.BytesIO()
         entries = {"ib/repositories": b"https://downloads.openwrt.org/packages/packages.adb\n",
@@ -163,7 +172,6 @@ class RepositoryStateTests(unittest.TestCase):
         self.index = b"package index v1"
         self.run_status = "completed"
         self.source = {"base_sha": "a" * 40, "upstream_sha": "b" * 40, "tree": "c" * 40}
-        self.recipe = "stable recipe tree"
         self.archive = self.root / ".cache/imagebuilder/ib.tar.zst"
         self.archive.parent.mkdir(parents=True)
         self.archive.write_bytes(b"verified archive")
@@ -175,8 +183,8 @@ class RepositoryStateTests(unittest.TestCase):
         for name, value in (("ROOT", self.root), ("WORK", self.work), ("STATE", self.state)):
             self.stack.enter_context(patch.object(fw, name, value))
         self.stack.enter_context(patch.object(fw, "config", return_value=self.cfg))
-        self.stack.enter_context(patch.object(fw, "merge_upstream", side_effect=lambda _cfg: self.source.copy()))
-        self.stack.enter_context(patch.object(fw, "git", side_effect=lambda *_args: self.recipe))
+        self.merge_mock = self.stack.enter_context(patch.object(fw, "merge_upstream", return_value=self.source.copy()))
+        self.git_mock = self.stack.enter_context(patch.object(fw, "git", return_value="stable recipe tree"))
         kernel = '\n'.join(key + "=y" for key in self.cfg["required_kernel_options"])
         self.stack.enter_context(patch.object(fw, "imagebuilder_metadata", return_value=(
             ["https://downloads.openwrt.org/test/packages.adb"], "6.12.112", kernel)))
@@ -216,11 +224,12 @@ class RepositoryStateTests(unittest.TestCase):
 
     def test_recipe_and_upstream_changes_require_build(self):
         self.record_success()
-        self.recipe = "changed recipe tree"
+        self.git_mock.return_value = "changed recipe tree"
         fw.check()
         self.assertEqual(self.output.call_args.kwargs["changed"], "true")
         self.record_success()
         self.source["upstream_sha"] = "e" * 40
+        self.merge_mock.return_value = self.source.copy()
         fw.check()
         self.assertEqual(self.output.call_args.kwargs["changed"], "true")
 
