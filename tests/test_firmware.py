@@ -70,6 +70,13 @@ class VersionAndPolicyTests(unittest.TestCase):
             result = subprocess.check_output(["sh", str(executable)], text=True).splitlines()
             self.assertEqual(result, ["update", f"lan ipaddr {fw.config()['lan_address']} netmask 255.255.255.0", "flush"])
 
+    def test_public_release_uploads_every_checksummed_sidecar(self):
+        workflow = (fw.ROOT / ".github/workflows/R5C-OpenWrt.yml").read_text()
+        upload = workflow.split('gh release create "$TAG"', 1)[1].split('gh release edit "$TAG"', 1)[0]
+        upload = upload.split("--notes-file incoming/release-notes.md", 1)[1]
+        for name in ("build-info.json", "kernel.config", "packages.manifest", "release-notes.md", "sha256sums"):
+            self.assertIn("incoming/" + name, upload)
+
     def test_imagebuilder_metadata_reads_real_tar_members(self):
         stream = io.BytesIO()
         entries = {"ib/repositories": b"https://downloads.openwrt.org/packages/packages.adb\n",

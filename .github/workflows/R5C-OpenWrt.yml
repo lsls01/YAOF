@@ -168,7 +168,7 @@ jobs:
           gh release create "$TAG" --repo "$REPOSITORY" --draft --prerelease --latest=false \
             --target "$(git rev-parse HEAD)" --title "$TAG" --notes-file incoming/release-notes.md \
             incoming/*.img.gz incoming/build-info.json incoming/kernel.config \
-            incoming/packages.manifest incoming/sha256sums
+            incoming/packages.manifest incoming/sha256sums incoming/release-notes.md
           gh release edit "$TAG" --repo "$REPOSITORY" --draft=false
           mkdir -p .state
           cp incoming/build-info.json .state/r5c.json
