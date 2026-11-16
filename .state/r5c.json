@@ -1,5 +1,5 @@
 {
-  "fingerprint": "acc16265e5dfdf4237f6c6cf713e4d85705df07b69a42014ca8e64a22f318d26",
+  "fingerprint": "d5f00304d6173f1456e2f61d6d9ec598c437ea53f6c901dcd6060b8f36240697",
   "ib_archive": ".cache/imagebuilder/openwrt-imagebuilder-25.12.6-rockchip-armv8.Linux-x86_64.tar.zst",
   "images": [
     {
@@ -18,9 +18,9 @@
           "version": "25.12.6"
         }
       },
-      "name": "r5c-25.12.6-acc16265e5df-43840103107-1-ext4-sysupgrade.img.gz",
-      "sha256": "e402254f2f3729a3303eafe6f6a14a7188b6c29e81347b749c9eaa256101e8d2",
-      "size": 99510732
+      "name": "r5c-25.12.6-d5f00304d617-ext4-sysupgrade.img.gz",
+      "sha256": "235000a0c9edfc3590e011dbb709a21b6d3a1ec0e0f6d327fdbfef865770e87d",
+      "size": 99510776
     },
     {
       "disk_bytes": 1140850688,
@@ -38,9 +38,9 @@
           "version": "25.12.6"
         }
       },
-      "name": "r5c-25.12.6-acc16265e5df-43840103107-1-squashfs-sysupgrade.img.gz",
-      "sha256": "74b96f96c2f4cdd0700156a7b137011961923d36ecce023ef2f363ffae49dbbe",
-      "size": 77639531
+      "name": "r5c-25.12.6-d5f00304d617-squashfs-sysupgrade.img.gz",
+      "sha256": "2facc3d57f600de97be49c5e883d13473dd9ed84151b91fcae9befb168e152bd",
+      "size": 77639587
     }
   ],
   "inputs": {
@@ -98,7 +98,7 @@
     "kernel_version": "6.12.112",
     "lan_address": "192.168.100.1",
     "profile": "friendlyarm_nanopi-r5c",
-    "recipe_sha256": "ed4a90f93ef2e2e24f0dbf6164464dceafb792698c650244302bc5af776b147b",
+    "recipe_sha256": "669ce6a6ca2932b673874fbecac91b9bc55ae6b48e65ce2f9aea04cd3c6ea73e",
     "upstream_sha": "fb2fc542411461c4856d2137ae19a263a8ed070e",
     "version": "25.12.6"
   },
@@ -116,11 +116,11 @@
     "CONFIG_XDP_SOCKETS": "n"
   },
   "source": {
-    "base_sha": "0ab71a221089fe202f5cf005280e4421a3f2ab3c",
-    "tree": "f7e589bd6f3267cbef082f21dc3f9061cde6f6a7",
+    "base_sha": "d6087fb15495cbd48d39df6545f3478fcbbe1aab",
+    "tree": "fc3855358de9c6cd6cb3626808b66543fe68f78b",
     "upstream_sha": "fb2fc542411461c4856d2137ae19a263a8ed070e"
   },
-  "tag": "r5c-25.12.6-acc16265e5df-43840103107-1",
+  "tag": "r5c-25.12.6-d5f00304d617",
   "verification": {
     "default_lan_in_rootfs": "192.168.100.1",
     "detached_btf_sha256": "159adcc88d1c12b47ea5a7c1c9f7092999726f029c0d2195cc1efa3ab15d8c8c",
