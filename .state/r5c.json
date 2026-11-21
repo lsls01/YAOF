@@ -1,5 +1,5 @@
 {
-  "fingerprint": "860c19bfb355dfc32709d95f1d76c2c33648ca1fc895dbfc41cb9748d869afa2",
+  "fingerprint": "26d7165c8086700eb5ee7358e9f35de1e441dbff554503f9ea63bf74c38a02c5",
   "ib_archive": ".cache/imagebuilder/openwrt-imagebuilder-25.12.6-rockchip-armv8.Linux-x86_64.tar.zst",
   "images": [
     {
@@ -18,9 +18,9 @@
           "version": "25.12.6"
         }
       },
-      "name": "r5c-25.12.6-860c19bfb355-ext4-sysupgrade.img.gz",
-      "sha256": "8542a53f7ff95236ea33e39a44263c10d375a26026687d3953ad68efd3f71c5f",
-      "size": 99562910
+      "name": "r5c-25.12.6-26d7165c8086-ext4-sysupgrade.img.gz",
+      "sha256": "dde12d0e6415793a29743fa07b5cb34fe9a81eee944ba3b88a211582bb9011e6",
+      "size": 99564182
     },
     {
       "disk_bytes": 1140850688,
@@ -38,9 +38,9 @@
           "version": "25.12.6"
         }
       },
-      "name": "r5c-25.12.6-860c19bfb355-squashfs-sysupgrade.img.gz",
-      "sha256": "7a4ad6a0d27cf07ea932c767f65f6bc1eb409151cee5fc5dee74ea157161e79e",
-      "size": 77677720
+      "name": "r5c-25.12.6-26d7165c8086-squashfs-sysupgrade.img.gz",
+      "sha256": "1c1111fd9435ffaea477f3712677367dbe778861667a7babe5024f4a527559f3",
+      "size": 77679246
     }
   ],
   "inputs": {
@@ -62,7 +62,7 @@
         "url": "https://downloads.openwrt.org/releases/25.12.6/targets/rockchip/armv8/packages/packages.adb"
       },
       {
-        "sha256": "24ae374dfa468e789459ce68734c6f20ed13e0b0f83497dae9b79dfa9d3b2a9f",
+        "sha256": "eff341e251f47ea9f5d69318772a0fed07f89371460e4025f1058450a0ec89bc",
         "url": "https://downloads.openwrt.org/releases/25.12.6/packages/aarch64_generic/base/packages.adb"
       },
       {
@@ -70,23 +70,23 @@
         "url": "https://downloads.openwrt.org/releases/25.12.6/targets/rockchip/armv8/kmods/6.12.112-1-5eacf764ba9415e5d7ff4aecb2e45c4d/packages.adb"
       },
       {
-        "sha256": "ccc151cc3b1aa9aa42cbb37fe1db01073afeac289b710b03c3ca5f85344426e3",
+        "sha256": "fddd3a5f5834818316abfaab9e57d89c2a94fe8936b429ce468f48c0a42a6115",
         "url": "https://downloads.openwrt.org/releases/25.12.6/packages/aarch64_generic/luci/packages.adb"
       },
       {
-        "sha256": "2903e1bc3177615918267564b94191e87f9a57e6e7d1e093348bffe912d0a772",
+        "sha256": "69bec2437934362350af18aaf7900a31bf223e05d7d1c83dac49eb98e0cd98db",
         "url": "https://downloads.openwrt.org/releases/25.12.6/packages/aarch64_generic/packages/packages.adb"
       },
       {
-        "sha256": "afc9e20e44c21c57865119991ed1e78059d6a163e8c58e5057bb8df22b283329",
+        "sha256": "db157b09b4812c707d27efc46a275e7d82f8def003a0e138a6573aca65b11ae6",
         "url": "https://downloads.openwrt.org/releases/25.12.6/packages/aarch64_generic/routing/packages.adb"
       },
       {
-        "sha256": "bc562ab6893541926b5227b1ad119b4102ab07c661baeb1937554cea24cec1af",
+        "sha256": "0d88d9f878f062291f75b1f811fae62ad247172a21237fec8d0e9905190ab098",
         "url": "https://downloads.openwrt.org/releases/25.12.6/packages/aarch64_generic/telephony/packages.adb"
       },
       {
-        "sha256": "b79d6dcdadc26c4abdc57fc5962a48ce6c6e69c7be04605f0c652b1ba022c6a7",
+        "sha256": "b5cf10571d271f76283db0118512a6b24c3b760bcbb02caecc0b3c6e0f93ecf1",
         "url": "https://downloads.openwrt.org/releases/25.12.6/packages/aarch64_generic/video/packages.adb"
       },
       {
@@ -116,11 +116,11 @@
     "CONFIG_XDP_SOCKETS": "n"
   },
   "source": {
-    "base_sha": "47a933222a8b514f48c138bb578fa652a8cd3aec",
-    "tree": "b719667442d635116f26424580b87c0c483ccee8",
+    "base_sha": "2635d5efe8d96c9a370cd282512c4cf28f580e62",
+    "tree": "ba43d0f8d5c9416fd1bce18c1d5bdbb2c1c573ac",
     "upstream_sha": "fb2fc542411461c4856d2137ae19a263a8ed070e"
   },
-  "tag": "r5c-25.12.6-860c19bfb355",
+  "tag": "r5c-25.12.6-26d7165c8086",
   "verification": {
     "default_lan_in_rootfs": "192.168.100.1",
     "detached_btf_sha256": "159adcc88d1c12b47ea5a7c1c9f7092999726f029c0d2195cc1efa3ab15d8c8c",
