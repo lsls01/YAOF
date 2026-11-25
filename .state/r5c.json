@@ -1,5 +1,5 @@
 {
-  "fingerprint": "54351fa6f42b763841bc9d1638984894ecf0587ff5a029ab76faf7319192e380",
+  "fingerprint": "64df7f5341d178a33215e0e90a9a0996bd83bbea6cdd460ff89bb6cf787d72c8",
   "ib_archive": ".cache/imagebuilder/openwrt-imagebuilder-25.12.6-rockchip-armv8.Linux-x86_64.tar.zst",
   "images": [
     {
@@ -18,9 +18,9 @@
           "version": "25.12.6"
         }
       },
-      "name": "r5c-25.12.6-54351fa6f42b-ext4-sysupgrade.img.gz",
-      "sha256": "2576c17902a83201d4390801a86747b47349bfea73c6402173617d5a85e722cf",
-      "size": 99986065
+      "name": "r5c-25.12.6-64df7f5341d1-ext4-sysupgrade.img.gz",
+      "sha256": "aa1654da390221713f7b283bf143da4741c59b3a4789f3533b2223d9bf398fea",
+      "size": 99909090
     },
     {
       "disk_bytes": 1140850688,
@@ -38,13 +38,13 @@
           "version": "25.12.6"
         }
       },
-      "name": "r5c-25.12.6-54351fa6f42b-squashfs-sysupgrade.img.gz",
-      "sha256": "d7d4ed9283ab82ddb58e492736616d2e195638e69c76bca38be31be3bab5848e",
-      "size": 77974530
+      "name": "r5c-25.12.6-64df7f5341d1-squashfs-sysupgrade.img.gz",
+      "sha256": "c1a1c8e368605b22aaed26d73614fb3de54e4f9d85bf8138d3f32192fa5e52ed",
+      "size": 77925737
     }
   ],
   "inputs": {
-    "addon_sha": "ec31cb56629623e07c60df7f1b23559e8b17ba1d",
+    "addon_sha": "71c60d3c35ad0077549c80d48f70f8f2e40fd311",
     "cleanup_sha256": "b895a2fc39b3bf506dddebb39154c7b99bf9953a4d163263abb42902fbd92e04",
     "device_packages": [
       "kmod-r8169",
@@ -90,7 +90,7 @@
         "url": "https://downloads.openwrt.org/releases/25.12.6/packages/aarch64_generic/video/packages.adb"
       },
       {
-        "sha256": "7886c799c20cd2699e1f8a29b96599b684c601ab78757673d2d388099198b31a",
+        "sha256": "cd25851a002e43ac10d1269d753349ad5ae8bfc48f9ee998a205d77111032b7f",
         "url": "https://qiusimons.github.io/OpenWrt-Add/aarch64_generic/packages.adb"
       }
     ],
@@ -116,11 +116,11 @@
     "CONFIG_XDP_SOCKETS": "n"
   },
   "source": {
-    "base_sha": "86f2781ff8866d5c56e886fa0b032decf1d6bca1",
-    "tree": "d13c66e978611ef679fe2a16ec7e2f81ac34ecd9",
+    "base_sha": "cde5faadd2753c4ec7e4ab174c516432e2230929",
+    "tree": "439ef61f4e149850bfaafe7e8a71766371969515",
     "upstream_sha": "fb2fc542411461c4856d2137ae19a263a8ed070e"
   },
-  "tag": "r5c-25.12.6-54351fa6f42b",
+  "tag": "r5c-25.12.6-64df7f5341d1",
   "verification": {
     "default_lan_in_rootfs": "192.168.100.1",
     "detached_btf_sha256": "159adcc88d1c12b47ea5a7c1c9f7092999726f029c0d2195cc1efa3ab15d8c8c",
